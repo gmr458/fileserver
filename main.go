@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -45,6 +46,56 @@ func main() {
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
 
+func isIPV4(ip string) bool {
+	if len(ip) < 7 || len(ip) > 15 {
+		return false
+	}
+
+	if strings.Count(ip, ".") != 3 {
+		return false
+	}
+
+	octets := strings.Split(ip, ".")
+
+	if len(octets) != 4 {
+		return false
+	}
+
+	first, err := strconv.Atoi(octets[0])
+	if err != nil {
+		return false
+	}
+	if first < 0 || first > 255 {
+		return false
+	}
+
+	second, err := strconv.Atoi(octets[1])
+	if err != nil {
+		return false
+	}
+	if second < 0 || second > 255 {
+		return false
+	}
+
+	third, err := strconv.Atoi(octets[2])
+	if err != nil {
+		return false
+	}
+	if third < 0 || third > 255 {
+		return false
+	}
+
+	fourth, err := strconv.Atoi(octets[3])
+	if err != nil {
+		return false
+	}
+	if fourth < 0 || fourth > 255 {
+		return false
+	}
+
+	return true
+}
+
 func getIps() []string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
@@ -59,12 +110,14 @@ func getIps() []string {
 			log.Fatal(err)
 		}
 
-		for k, a := range addrs {
-			if k == 0 {
-				if !strings.HasPrefix(a.String(), "127") {
-					ip := strings.Split(a.String(), "/")[0]
-					ips = append(ips, ip)
-				}
+		for _, a := range addrs {
+			ip := strings.Split(a.String(), "/")[0]
+			flags := i.Flags.String()
+
+			if isIPV4(ip) &&
+				strings.Contains(flags, "up") &&
+				!strings.Contains(flags, "loopback") {
+				ips = append(ips, ip)
 			}
 		}
 	}
