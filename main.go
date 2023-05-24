@@ -32,7 +32,18 @@ func main() {
 	fmt.Printf("Local: http://localhost:%d/\n", port)
 
 	ips := getIps()
+	networkLinks := formatIPs(ips)
+	if networkLinks == "" {
+		fmt.Println("Network: Not connected to a local network")
+	} else {
+		fmt.Printf("Network: %s\n", networkLinks)
+	}
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+}
+
+func formatIPs(ips []string) string {
 	networkLinks := ""
+
 	for k, ip := range ips {
 		networkLinks += fmt.Sprintf("http://%s:%d/", ip, port)
 
@@ -42,8 +53,8 @@ func main() {
 
 		networkLinks += ", "
 	}
-	fmt.Printf("Network: %s\n", networkLinks)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
+
+	return networkLinks
 }
 
 func isIPV4(ip string) bool {
@@ -116,6 +127,8 @@ func getIps() []string {
 
 			if isIPV4(ip) &&
 				strings.Contains(flags, "up") &&
+				strings.Contains(flags, "broadcast") &&
+				strings.Contains(flags, "multicast") &&
 				!strings.Contains(flags, "loopback") {
 				ips = append(ips, ip)
 			}
